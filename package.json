@@ -1,0 +1,22 @@
+{
+  "name": "ezswap-contract",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "hardhat": "^2.11.2"
+  },
+  "dependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+    "@openzeppelin/contracts": "^4.7.3",
+    "@rari-capital/solmate": "github:transmissions11/solmate#1116070fe7dc2200e6696d0047cdf7b22acff137",
+    "dotenv": "^16.0.3",
+    "undici": "^5.11.0"
+  }
+}
