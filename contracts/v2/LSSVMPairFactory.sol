@@ -362,6 +362,7 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
         uint128 spotPrice;
         uint256[] initialNFTIDs;
         uint256 initialTokenBalance;
+        uint256[] initialNFTCounts;
     }
 
     function createPair1155ERC20(Create1155ERC20PairParams calldata params)
@@ -398,7 +399,8 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
             params.fee,
             params.spotPrice,
             params.initialNFTIDs,
-            params.initialTokenBalance
+            params.initialTokenBalance,
+            params.initialNFTCounts
         );
         emit NewPair(address(pair));
     }
@@ -687,7 +689,8 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
         uint96 _fee,
         uint128 _spotPrice,
         uint256[] calldata _initialNFTIDs,
-        uint256 _initialTokenBalance
+        uint256 _initialTokenBalance,
+        uint256[] calldata initialNFTCounts
     ) internal {
         // initialize pair
         _pair.initialize(msg.sender, _assetRecipient, _delta, _fee, _spotPrice);
@@ -706,7 +709,7 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
                 msg.sender,
                 address(_pair),
                 _initialNFTIDs[i],
-                1,
+                initialNFTCounts[i],
                 ""
             );
 
