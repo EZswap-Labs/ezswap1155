@@ -22,21 +22,24 @@ async function main() {
   const EnumETHTem = await hre.ethers.getContractFactory(
     "LSSVMPairEnumerableETH"
   );
+  console.log(1)
   const enumETHTem = await EnumETHTem.deploy();
   await enumETHTem.deployed();
-
+  console.log(2)
   const MissEnumETHTem = await hre.ethers.getContractFactory(
     "LSSVMPairMissingEnumerableETH"
   );
+  console.log(3)
   const missEnumETHTem = await MissEnumETHTem.deploy();
   await missEnumETHTem.deployed();
-
+  console.log(4)
   const EnumERC20Tem = await hre.ethers.getContractFactory(
     "LSSVMPairEnumerableERC20"
   );
+  console.log(5)
   const enumERC20Tem = await EnumERC20Tem.deploy();
   await enumERC20Tem.deployed();
-
+  console.log(6)
   const MissEnumERC20Tem = await hre.ethers.getContractFactory(
     "LSSVMPairMissingEnumerableERC20"
   );
