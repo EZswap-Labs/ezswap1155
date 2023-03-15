@@ -37,12 +37,12 @@ module.exports = {
   },
 
   networks: {
-    goerli: {
-      url: goerliUrl,
-      accounts: [
-        goerliAccount
-      ],
-    },
+    // goerli: {
+    //   url: goerliUrl,
+    //   accounts: [
+    //     goerliAccount
+    //   ],
+    // },
     // mainnet: {
     //   url: mainnetUrl,
     //   accounts: [

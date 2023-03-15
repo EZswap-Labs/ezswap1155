@@ -41,7 +41,7 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
 
     uint256 internal constant MAX_PROTOCOL_FEE = 0.10e18; // 10%, must <= 1 - MAX_FEE
 
-        uint256 internal constant MAX_OPERATOR_PROTOCOL_FEE = 0.10e18; // 10%
+    uint256 internal constant MAX_OPERATOR_PROTOCOL_FEE = 0.10e18; // 10%
 
     uint256 internal constant MAX_TOTAL_OPERATOR_PROTOCOL_FEE = 0.40e18; // 40%, must <= 1 - MAX_FEE - MAX_PROTOCOL_FEE
 
@@ -62,8 +62,12 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
     uint256 public override protocolFeeMultiplier;
 
     // nft operator
-    mapping(address => mapping(address => address)) public override operatorProtocolFeeRecipients;
-    mapping(address => mapping(address => uint256)) public override operatorProtocolFeeMultipliers;
+    mapping(address => mapping(address => address))
+        public
+        override operatorProtocolFeeRecipients;
+    mapping(address => mapping(address => uint256))
+        public
+        override operatorProtocolFeeMultipliers;
 
     mapping(address => EnumerableSet.AddressSet) internal nftOperators;
 
@@ -84,12 +88,12 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
     event CallTargetStatusUpdate(address target, bool isAllowed);
     event RouterStatusUpdate(LSSVMRouter router, bool isAllowed);
     event OperatorProtocolFeeStatusUpdate(
-            address nft, 
-            address callAddress, 
-            address operatorProtocolFeeRecipient, 
-            uint256 operatorProtocolFeeMultiplier, 
-            uint256 totalOperatorProtocolFeeMultipliers
-        );
+        address nft,
+        address callAddress,
+        address operatorProtocolFeeRecipient,
+        uint256 operatorProtocolFeeMultiplier,
+        uint256 totalOperatorProtocolFeeMultipliers
+    );
 
     constructor(
         LSSVMPairEnumerableETH _enumerableETHTemplate,
@@ -113,7 +117,11 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
         protocolFeeMultiplier = _protocolFeeMultiplier;
     }
 
-    function getNftOperators(address nft) external view returns (address[] memory){
+    function getNftOperators(address nft)
+        external
+        view
+        returns (address[] memory)
+    {
         return nftOperators[nft].values();
     }
 
@@ -127,30 +135,51 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
         delete operatorProtocolFeeRecipients[nft][operator];
         delete operatorProtocolFeeMultipliers[nft][operator];
         nftOperators[nft].remove(operator);
-
     }
 
-    function setOperatorProtocolFee (
-        address nft, 
-        address operatorProtocolFeeRecipient, 
+    function setOperatorProtocolFee(
+        address nft,
+        address operatorProtocolFeeRecipient,
         uint256 operatorProtocolFeeMultiplier
     ) external {
-        require(nftOperators[nft].contains(msg.sender), "unauthorized operator");
-        require(operatorProtocolFeeMultiplier <= MAX_OPERATOR_PROTOCOL_FEE, "Operator protocol fee too large");
-        
-        operatorProtocolFeeRecipients[nft][msg.sender] = operatorProtocolFeeRecipient;
-        operatorProtocolFeeMultipliers[nft][msg.sender] = operatorProtocolFeeMultiplier;
+        require(
+            nftOperators[nft].contains(msg.sender),
+            "unauthorized operator"
+        );
+        require(
+            operatorProtocolFeeMultiplier <= MAX_OPERATOR_PROTOCOL_FEE,
+            "Operator protocol fee too large"
+        );
+
+        operatorProtocolFeeRecipients[nft][
+            msg.sender
+        ] = operatorProtocolFeeRecipient;
+        operatorProtocolFeeMultipliers[nft][
+            msg.sender
+        ] = operatorProtocolFeeMultiplier;
         address[] memory allOperators = nftOperators[nft].values();
         uint totalOperatorProtocolFeeMultipliers;
         for (uint i = 0; i < allOperators.length; ) {
-            totalOperatorProtocolFeeMultipliers += operatorProtocolFeeMultipliers[nft][allOperators[i]];
+            totalOperatorProtocolFeeMultipliers += operatorProtocolFeeMultipliers[
+                nft
+            ][allOperators[i]];
             unchecked {
                 ++i;
             }
         }
 
-        require(totalOperatorProtocolFeeMultipliers <= MAX_TOTAL_OPERATOR_PROTOCOL_FEE, "Total operator protocol fee too large");
-        emit OperatorProtocolFeeStatusUpdate(nft, msg.sender, operatorProtocolFeeRecipient, operatorProtocolFeeMultiplier, totalOperatorProtocolFeeMultipliers);
+        require(
+            totalOperatorProtocolFeeMultipliers <=
+                MAX_TOTAL_OPERATOR_PROTOCOL_FEE,
+            "Total operator protocol fee too large"
+        );
+        emit OperatorProtocolFeeStatusUpdate(
+            nft,
+            msg.sender,
+            operatorProtocolFeeRecipient,
+            operatorProtocolFeeMultiplier,
+            totalOperatorProtocolFeeMultipliers
+        );
     }
 
     /**
@@ -240,14 +269,12 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
             "Bonding curve not whitelisted"
         );
         require(
-            _initialNFTIDs.length==_initialNFTCounts.length,
+            _initialNFTIDs.length == _initialNFTCounts.length,
             "nft and count length must same"
         );
-        
 
         // Check to see if the NFT supports Enumerable to determine which template to use
         address template = address(missingEnumerable1155ETHTemplate);
-
 
         pair = LSSVMPair1155ETH(
             payable(
@@ -361,8 +388,8 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
         uint96 fee;
         uint128 spotPrice;
         uint256[] initialNFTIDs;
-        uint256 initialTokenBalance;
         uint256[] initialNFTCounts;
+        uint256 initialTokenBalance;
     }
 
     function createPair1155ERC20(Create1155ERC20PairParams calldata params)
@@ -374,9 +401,13 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
             "Bonding curve not whitelisted"
         );
 
+        require(
+            params.initialNFTIDs.length == params.initialNFTCounts.length,
+            "nft and count length must same"
+        );
+
         // Check to see if the NFT supports Enumerable to determine which template to use
         address template = address(missingEnumerable1155ERC20Template);
-
 
         pair = LSSVMPair1155ERC20(
             payable(
@@ -399,8 +430,8 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
             params.fee,
             params.spotPrice,
             params.initialNFTIDs,
-            params.initialTokenBalance,
-            params.initialNFTCounts
+            params.initialNFTCounts,
+            params.initialTokenBalance
         );
         emit NewPair(address(pair));
     }
@@ -445,7 +476,7 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
                     address(missingEnumerableETHTemplate),
                     potentialPair
                 );
-                ///////////////////////////////////////////////////
+            ///////////////////////////////////////////////////
         } else if (variant == PairVariant.MISSING_ENUMERABLE_1155_ETH) {
             return
                 LSSVMPairCloner.isETHPairClone(
@@ -628,20 +659,13 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
         payable(address(_pair)).safeTransferETH(msg.value);
 
         // transfer initial NFTs from sender to pair
-        uint256 numNFTs = _initialNFTIDs.length;
-        for (uint256 i; i < numNFTs; ) {
-            _nft.safeTransferFrom(
-                msg.sender,
-                address(_pair),
-                _initialNFTIDs[i],
-                _initialNFTCounts[i],
-                ""
-            );
-
-            unchecked {
-                ++i;
-            }
-        }
+        _nft.safeBatchTransferFrom(
+            msg.sender,
+            address(_pair),
+            _initialNFTIDs,
+            _initialNFTCounts,
+            ""
+        );
     }
 
     function _initializePairERC20(
@@ -689,8 +713,8 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
         uint96 _fee,
         uint128 _spotPrice,
         uint256[] calldata _initialNFTIDs,
-        uint256 _initialTokenBalance,
-        uint256[] calldata initialNFTCounts
+        uint256[] calldata _initialNFTCounts,
+        uint256 _initialTokenBalance
     ) internal {
         // initialize pair
         _pair.initialize(msg.sender, _assetRecipient, _delta, _fee, _spotPrice);
@@ -703,20 +727,13 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
         );
 
         // transfer initial NFTs from sender to pair
-        uint256 numNFTs = _initialNFTIDs.length;
-        for (uint256 i; i < numNFTs; ) {
-            _nft.safeTransferFrom(
-                msg.sender,
-                address(_pair),
-                _initialNFTIDs[i],
-                initialNFTCounts[i],
-                ""
-            );
-
-            unchecked {
-                ++i;
-            }
-        }
+        _nft.safeBatchTransferFrom(
+            msg.sender,
+            address(_pair),
+            _initialNFTIDs,
+            _initialNFTCounts,
+            ""
+        );
     }
 
     /** 
@@ -755,10 +772,7 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
         address recipient,
         uint256[] calldata counts
     ) external {
-        require(
-            ids.length==counts.length,
-            "nft and count length must same"
-        );
+        require(ids.length == counts.length, "nft and count length must same");
         // transfer NFTs from caller to recipient
         uint256 numNFTs = ids.length;
         for (uint256 i; i < numNFTs; ) {
