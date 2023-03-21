@@ -180,6 +180,7 @@ abstract contract LSSVMPair is
         This swap is meant for users who want specific IDs. Also higher chance of
         reverting if some of the specified IDs leave the pool before the swap goes through.
         @param nftIds The list of IDs of the NFTs to purchase
+        @param nftCounts The list of counts of the NFTs to purchase
         @param maxExpectedTokenInput The maximum acceptable cost from the sender. If the actual
         amount is greater than this value, the transaction will be reverted.
         @param nftRecipient The recipient of the NFTs
@@ -191,6 +192,7 @@ abstract contract LSSVMPair is
      */
     function swapTokenForSpecificNFTs(
         uint256[] calldata nftIds,
+        uint256[] calldata nftCounts,
         uint256 maxExpectedTokenInput,
         address nftRecipient,
         bool isRouter,
@@ -238,6 +240,7 @@ abstract contract LSSVMPair is
         @notice Sends a set of NFTs to the pair in exchange for token
         @dev To compute the amount of token to that will be received, call bondingCurve.getSellInfo.
         @param nftIds The list of IDs of the NFTs to sell to the pair
+        @param nftCounts The list of IDs of the counts to sell to the pair
         @param minExpectedTokenOutput The minimum acceptable token received by the sender. If the actual
         amount is less than this value, the transaction will be reverted.
         @param tokenRecipient The recipient of the token output
@@ -249,6 +252,7 @@ abstract contract LSSVMPair is
      */
     function swapNFTsForToken(
         uint256[] calldata nftIds,
+        uint256[] calldata nftCounts,
         uint256 minExpectedTokenOutput,
         address payable tokenRecipient,
         bool isRouter,

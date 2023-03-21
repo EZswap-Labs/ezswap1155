@@ -174,7 +174,7 @@ describe('sell nft eth', async () => {
 
         ////////////////// sell test robustSwapNFTsForToken
         const minOutput = hre.ethers.utils.parseEther("0")
-        const swapList = [[[poolAddress, [0,]], minOutput]]
+        const swapList = [[[poolAddress, [0,], [1]], minOutput]]
         const ddl = (await ethers.provider.getBlock("latest")).timestamp * 2;
         const robustSell = await pairrouterContract.robustSwapNFTsForToken(swapList, alice.address, ddl)
         console.log("operator balance:", await myErc20TokenContract.balanceOf("0x7271b723F864d77Db16C20dDf0eC8b78Df05aeb2"));

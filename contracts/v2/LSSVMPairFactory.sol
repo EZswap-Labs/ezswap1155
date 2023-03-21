@@ -261,16 +261,12 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
         uint128 _delta,
         uint96 _fee,
         uint128 _spotPrice,
-        uint256[] calldata _initialNFTIDs,
-        uint256[] calldata _initialNFTCounts
+        uint256 _nftId,
+        uint256 _initialNFTCount
     ) external payable returns (LSSVMPair1155ETH pair) {
         require(
             bondingCurveAllowed[_bondingCurve],
             "Bonding curve not whitelisted"
-        );
-        require(
-            _initialNFTIDs.length == _initialNFTCounts.length,
-            "nft and count length must same"
         );
 
         // Check to see if the NFT supports Enumerable to determine which template to use
@@ -282,7 +278,8 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
                     this,
                     _bondingCurve,
                     _nft,
-                    uint8(_poolType)
+                    uint8(_poolType),
+                    _nftId
                 )
             )
         );
@@ -294,8 +291,8 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
             _delta,
             _fee,
             _spotPrice,
-            _initialNFTIDs,
-            _initialNFTCounts
+            _nftId,
+            _initialNFTCount
         );
         emit NewPair(address(pair));
     }
@@ -387,8 +384,8 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
         uint128 delta;
         uint96 fee;
         uint128 spotPrice;
-        uint256[] initialNFTIDs;
-        uint256[] initialNFTCounts;
+        uint256 nftId;
+        uint256 initialNFTCount;
         uint256 initialTokenBalance;
     }
 
@@ -401,11 +398,6 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
             "Bonding curve not whitelisted"
         );
 
-        require(
-            params.initialNFTIDs.length == params.initialNFTCounts.length,
-            "nft and count length must same"
-        );
-
         // Check to see if the NFT supports Enumerable to determine which template to use
         address template = address(missingEnumerable1155ERC20Template);
 
@@ -416,7 +408,8 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
                     params.bondingCurve,
                     params.nft,
                     uint8(params.poolType),
-                    params.token
+                    params.token,
+                    params.nftId
                 )
             )
         );
@@ -429,8 +422,8 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
             params.delta,
             params.fee,
             params.spotPrice,
-            params.initialNFTIDs,
-            params.initialNFTCounts,
+            params.nftId,
+            params.initialNFTCount,
             params.initialTokenBalance
         );
         emit NewPair(address(pair));
@@ -479,14 +472,14 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
             ///////////////////////////////////////////////////
         } else if (variant == PairVariant.MISSING_ENUMERABLE_1155_ETH) {
             return
-                LSSVMPairCloner.isETHPairClone(
+                LSSVMPairCloner.isETHPair1155Clone(
                     address(this),
                     address(missingEnumerable1155ETHTemplate),
                     potentialPair
                 );
         } else if (variant == PairVariant.MISSING_ENUMERABLE_1155_ERC20) {
             return
-                LSSVMPairCloner.isERC20PairClone(
+                LSSVMPairCloner.isERC20Pair1155Clone(
                     address(this),
                     address(missingEnumerable1155ERC20Template),
                     potentialPair
@@ -649,23 +642,26 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
         uint128 _delta,
         uint96 _fee,
         uint128 _spotPrice,
-        uint256[] calldata _initialNFTIDs,
-        uint256[] calldata _initialNFTCounts
+        uint256 _nftId,
+        uint256 _initialNFTCount
     ) internal {
         // initialize pair
-        _pair.initialize(msg.sender, _assetRecipient, _delta, _fee, _spotPrice);
+        _pair.initialize(msg.sender, _assetRecipient, _delta, _fee, _spotPrice, _nftId);
 
         // transfer initial ETH to pair
         payable(address(_pair)).safeTransferETH(msg.value);
 
-        // transfer initial NFTs from sender to pair
-        _nft.safeBatchTransferFrom(
-            msg.sender,
-            address(_pair),
-            _initialNFTIDs,
-            _initialNFTCounts,
-            ""
-        );
+        if (_initialNFTCount > 0) {
+            // transfer initial NFTs from sender to pair
+            _nft.safeTransferFrom(
+                msg.sender,
+                address(_pair),
+                _nftId,
+                _initialNFTCount,
+                ""
+            );
+        }
+        
     }
 
     function _initializePairERC20(
@@ -712,12 +708,12 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
         uint128 _delta,
         uint96 _fee,
         uint128 _spotPrice,
-        uint256[] calldata _initialNFTIDs,
-        uint256[] calldata _initialNFTCounts,
+        uint256 _nftId,
+        uint256 _initialNFTCount,
         uint256 _initialTokenBalance
     ) internal {
         // initialize pair
-        _pair.initialize(msg.sender, _assetRecipient, _delta, _fee, _spotPrice);
+        _pair.initialize(msg.sender, _assetRecipient, _delta, _fee, _spotPrice, _nftId);
 
         // transfer initial tokens to pair
         _token.safeTransferFrom(
@@ -725,13 +721,13 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
             address(_pair),
             _initialTokenBalance
         );
-
+        
         // transfer initial NFTs from sender to pair
-        _nft.safeBatchTransferFrom(
+        _nft.safeTransferFrom(
             msg.sender,
             address(_pair),
-            _initialNFTIDs,
-            _initialNFTCounts,
+            _nftId,
+            _initialNFTCount,
             ""
         );
     }

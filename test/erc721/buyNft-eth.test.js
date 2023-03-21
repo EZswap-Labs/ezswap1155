@@ -162,7 +162,7 @@ describe('buy nft eth', async () => {
         console.log("operator balance:",await ethers.provider.getBalance("0x7271b723F864d77Db16C20dDf0eC8b78Df05aeb2"));
         ////////////////////// buy test robustswapethforspecificNFTs
         const maxCost = hre.ethers.utils.parseEther("1")
-        const swapList = [[[poolAddress, [0]], maxCost]]
+        const swapList = [[[poolAddress, [0], [1]], maxCost]]
         const ddl = (await ethers.provider.getBlock("latest")).timestamp * 2;
         const robustBuy = await pairrouterContract.robustSwapETHForSpecificNFTs(swapList, alice.address, alice.address, ddl, { value: maxCost })
         console.log("operator balance:",await ethers.provider.getBalance("0x7271b723F864d77Db16C20dDf0eC8b78Df05aeb2"));

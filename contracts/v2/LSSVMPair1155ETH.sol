@@ -17,7 +17,7 @@ abstract contract LSSVMPair1155ETH is LSSVMPair1155 {
     using SafeTransferLib for address payable;
     using SafeTransferLib for ERC20;
 
-    uint256 internal constant IMMUTABLE_PARAMS_LENGTH = 61;
+    uint256 internal constant IMMUTABLE_PARAMS_LENGTH = 93;
 
     /// @inheritdoc LSSVMPair1155
     function _pullTokenInputAndPayProtocolFee(
