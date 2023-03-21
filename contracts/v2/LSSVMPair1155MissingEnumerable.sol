@@ -6,7 +6,6 @@ import {Arrays} from "@openzeppelin/contracts/utils/Arrays.sol";
 import {LSSVMPair1155} from "./LSSVMPair1155.sol";
 import {LSSVMRouter} from "./LSSVMRouter.sol";
 import {ILSSVMPairFactoryLike} from "./ILSSVMPairFactoryLike.sol";
-
 /**
     @title An NFT/Token pair for an NFT that does not implement ERC721Enumerable
     @author boredGenius and 0xmons
@@ -20,7 +19,8 @@ abstract contract LSSVMPair1155MissingEnumerable is LSSVMPair1155 {
     function _sendSpecificNFTsToRecipient(
         IERC1155 _nft,
         address nftRecipient,
-        uint256[] calldata nftIds
+        uint256[] calldata nftIds,
+        uint256[] calldata nftCounts
     ) internal override {
         // Send NFTs to caller
         // If missing enumerable, update pool's own ID set
@@ -30,21 +30,18 @@ abstract contract LSSVMPair1155MissingEnumerable is LSSVMPair1155 {
                 address(this),
                 nftRecipient,
                 nftIds[i],
-                1,
+                nftCounts[i],
                 ""
             );
-
             // Remove from id set
             uint256 toDeleteIndex = idSet.findUpperBound(nftIds[i]);
             require(idSet[toDeleteIndex] == nftIds[i], "Invalid Id");
-
             uint256 lastIndex = idSet.length - 1;
             if (lastIndex != toDeleteIndex) {
                 uint256 lastValue = idSet[lastIndex];
                 // Move the last value to the index where the value to delete is
                 idSet[toDeleteIndex] = lastValue;
             }
-
             idSet.pop();
 
             unchecked {
@@ -80,10 +77,20 @@ abstract contract LSSVMPair1155MissingEnumerable is LSSVMPair1155 {
     function onERC1155BatchReceived(
         address,
         address,
-        uint256[] memory,
+        uint256[] memory nftIds,
         uint256[] memory,
         bytes memory
     ) public virtual returns (bytes4) {
+        IERC1155 _nft = nft();
+        if (msg.sender == address(_nft)) {
+            for (uint i; i < nftIds.length; ) {
+                idSet.push(nftIds[i]);
+
+                unchecked {
+                    ++i;
+                }
+            }
+        }
         return this.onERC1155BatchReceived.selector;
     }
 

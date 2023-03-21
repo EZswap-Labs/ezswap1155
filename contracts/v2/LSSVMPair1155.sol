@@ -48,6 +48,9 @@ abstract contract LSSVMPair1155 is
     // Otherwise, assets will be sent to the set address. Not available for TRADE pools.
     address payable public assetRecipient;
 
+    //nftId specified by pair
+    uint256 public nftId;
+
     // Events
     event SwapNFTInPair();
     event SwapNFTOutPair();
@@ -73,13 +76,15 @@ abstract contract LSSVMPair1155 is
       @param _delta The initial delta of the bonding curve
       @param _fee The initial % fee taken, if this is a trade pair 
       @param _spotPrice The initial price to sell an asset into the pair
+      @param _nftId pair nft id
      */
     function initialize(
         address _owner,
         address payable _assetRecipient,
         uint128 _delta,
         uint96 _fee,
-        uint128 _spotPrice
+        uint128 _spotPrice,
+        uint256 _nftId
     ) external payable {
         require(owner() == address(0), "Initialized");
         __Ownable_init(_owner);
@@ -106,6 +111,7 @@ abstract contract LSSVMPair1155 is
         );
         delta = _delta;
         spotPrice = _spotPrice;
+        nftId = _nftId;
     }
 
     /**
@@ -118,6 +124,7 @@ abstract contract LSSVMPair1155 is
         This swap is meant for users who want specific IDs. Also higher chance of
         reverting if some of the specified IDs leave the pool before the swap goes through.
         @param nftIds The list of IDs of the NFTs to purchase
+        @param nftIds The list of counts of the NFTs to purchase
         @param maxExpectedTokenInput The maximum acceptable cost from the sender. If the actual
         amount is greater than this value, the transaction will be reverted.
         @param nftRecipient The recipient of the NFTs
@@ -129,6 +136,7 @@ abstract contract LSSVMPair1155 is
      */
     function swapTokenForSpecificNFTs(
         uint256[] calldata nftIds,
+        uint256[] calldata nftCounts,
         uint256 maxExpectedTokenInput,
         address nftRecipient,
         bool isRouter,
@@ -137,7 +145,6 @@ abstract contract LSSVMPair1155 is
         // Store locally to remove extra calls
         ILSSVMPairFactoryLike _factory = factory();
         ICurve _bondingCurve = bondingCurve();
-
         // Input validation
         {
             PoolType _poolType = poolType();
@@ -146,16 +153,26 @@ abstract contract LSSVMPair1155 is
                 "Wrong Pool type"
             );
             require((nftIds.length > 0), "Must ask for > 0 NFTs");
+            require(nftIds.length == nftCounts.length, "Nft and count length must same");
+
+            for (uint256 i; i < nftIds.length; ) {
+
+                require(nftIds[i] == nftId, "The nftId of the transaction is not specified by pair");
+
+                unchecked {
+                    ++i;
+                }
+            }
         }
         // Call bonding curve for pricing information
         CurveErrorCodes.ProtocolFeeStruct memory protocolFeeStruct;
 
         (protocolFeeStruct, inputAmount) = _calculateBuyInfoAndUpdatePoolParams(
-            nftIds.length,
+            nftCounts,
             maxExpectedTokenInput,
             _bondingCurve
         );
-
+        
         _pullTokenInputAndPayProtocolFee(
             inputAmount,
             isRouter,
@@ -164,7 +181,7 @@ abstract contract LSSVMPair1155 is
             protocolFeeStruct
         );
 
-        _sendSpecificNFTsToRecipient(nft(), nftRecipient, nftIds);
+        _sendSpecificNFTsToRecipient(nft(), nftRecipient, nftIds, nftCounts);
 
         _refundTokenToSender(inputAmount);
 
@@ -175,6 +192,7 @@ abstract contract LSSVMPair1155 is
         @notice Sends a set of NFTs to the pair in exchange for token
         @dev To compute the amount of token to that will be received, call bondingCurve.getSellInfo.
         @param nftIds The list of IDs of the NFTs to sell to the pair
+        @param nftCounts The list of counts of the NFTs to sell to the pair
         @param minExpectedTokenOutput The minimum acceptable token received by the sender. If the actual
         amount is less than this value, the transaction will be reverted.
         @param tokenRecipient The recipient of the token output
@@ -186,6 +204,7 @@ abstract contract LSSVMPair1155 is
      */
     function swapNFTsForToken(
         uint256[] calldata nftIds,
+        uint256[] calldata nftCounts,
         uint256 minExpectedTokenOutput,
         address payable tokenRecipient,
         bool isRouter,
@@ -203,12 +222,22 @@ abstract contract LSSVMPair1155 is
                 "Wrong Pool type"
             );
             require(nftIds.length > 0, "Must ask for > 0 NFTs");
+            require(nftIds.length == nftCounts.length, "nft and count length must same");
+
+            for (uint256 i; i < nftIds.length; ) {
+
+                require(nftIds[i] == nftId, "The nftId of the transaction is not specified by pair");
+
+                unchecked {
+                    ++i;
+                }
+            }
         }
 
         // Call bonding curve for pricing information
         CurveErrorCodes.ProtocolFeeStruct memory protocolFeeStruct;
         (protocolFeeStruct, outputAmount) = _calculateSellInfoAndUpdatePoolParams(
-            nftIds.length,
+            nftCounts,
             minExpectedTokenOutput,
             _bondingCurve
         );
@@ -217,7 +246,7 @@ abstract contract LSSVMPair1155 is
 
         _payProtocolFeeFromPair(protocolFeeStruct);
 
-        _takeNFTsFromSender(nft(), nftIds, _factory, isRouter, routerCaller);
+        _takeNFTsFromSender(nft(), nftIds, nftCounts, isRouter, routerCaller);
 
         emit SwapNFTInPair();
     }
@@ -230,7 +259,9 @@ abstract contract LSSVMPair1155 is
         @dev Used as read function to query the bonding curve for buy pricing info
         @param numNFTs The number of NFTs to buy from the pair
      */
-    function getBuyNFTQuote(uint256 numNFTs)
+    function getBuyNFTQuote(
+        uint256 numNFTs
+        )
         external
         view
         returns (
@@ -391,14 +422,14 @@ abstract contract LSSVMPair1155 is
 
     /**
         @notice Calculates the amount needed to be sent into the pair for a buy and adjusts spot price or delta if necessary
-        @param numNFTs The amount of NFTs to purchase from the pair
+        @param nftCounts The amount of NFTs to purchase from the pair
         @param maxExpectedTokenInput The maximum acceptable cost from the sender. If the actual
         @param _bondingCurve _bondingCurve
         @return protocolFeeStruct protocol fee struct
         @return inputAmount The amount of tokens total tokens receive
      */
     function _calculateBuyInfoAndUpdatePoolParams(
-        uint256 numNFTs,
+        uint256[] calldata nftCounts,
         uint256 maxExpectedTokenInput,
         ICurve _bondingCurve
     ) 
@@ -414,6 +445,16 @@ abstract contract LSSVMPair1155 is
         uint128 newSpotPrice;
         uint128 currentDelta = delta;
         uint128 newDelta;
+
+        uint256 nftCount;
+        for (uint256 i; i < nftCounts.length; ) {
+            nftCount +=  nftCounts[i];
+
+            unchecked {
+                ++i;
+            }
+        }
+
         uint[] memory protocolFeeMultipliers;
         address[] memory protocolFeeRecipients;
         (protocolFeeMultipliers, protocolFeeRecipients) = _getProtocolFeeMultipliersAndRecipients();
@@ -426,7 +467,7 @@ abstract contract LSSVMPair1155 is
         ) = _bondingCurve.getBuyInfo(
             currentSpotPrice,
             currentDelta,
-            numNFTs,
+            nftCount,
             fee,
             protocolFeeMultipliers
         );
@@ -460,14 +501,14 @@ abstract contract LSSVMPair1155 is
 
     /**
         @notice Calculates the amount needed to be sent by the pair for a sell and adjusts spot price or delta if necessary
-        @param numNFTs The amount of NFTs to send to the the pair
+        @param nftCounts The amount of NFTs to send to the the pair
         @param minExpectedTokenOutput The minimum acceptable token received by the sender. If the actual
         @param _bondingCurve bondingCurve
         @return protocolFeeStruct protocol fee struct
         @return outputAmount The amount of tokens total tokens receive
      */
     function _calculateSellInfoAndUpdatePoolParams(
-        uint256 numNFTs,
+        uint256[] calldata nftCounts,
         uint256 minExpectedTokenOutput,
         ICurve _bondingCurve
     ) internal returns (
@@ -481,6 +522,16 @@ abstract contract LSSVMPair1155 is
         uint128 newSpotPrice;
         uint128 currentDelta = delta;
         uint128 newDelta;
+
+        uint256 nftCount;
+        for (uint256 i; i < nftCounts.length; ) {
+            nftCount +=  nftCounts[i];
+
+            unchecked {
+                ++i;
+            }
+        }
+
         uint[] memory protocolFeeMultipliers;
         address[] memory protocolFeeRecipients;
         (protocolFeeMultipliers, protocolFeeRecipients) = _getProtocolFeeMultipliersAndRecipients();
@@ -493,7 +544,7 @@ abstract contract LSSVMPair1155 is
         ) = _bondingCurve.getSellInfo(
             currentSpotPrice,
             currentDelta,
-            numNFTs,
+            nftCount,
             fee,
             protocolFeeMultipliers
         );
@@ -577,11 +628,13 @@ abstract contract LSSVMPair1155 is
         @param _nft The address of the NFT to send
         @param nftRecipient The receiving address for the NFTs
         @param nftIds The specific IDs of NFTs to send  
+        @param nftCounts The specific counts of NFTs to send  
      */
     function _sendSpecificNFTsToRecipient(
         IERC1155 _nft,
         address nftRecipient,
-        uint256[] calldata nftIds
+        uint256[] calldata nftIds,
+        uint256[] calldata nftCounts
     ) internal virtual;
 
     /**
@@ -589,6 +642,7 @@ abstract contract LSSVMPair1155 is
         @dev This is used by the LSSVMPair's swapNFTForToken function. 
         @param _nft The NFT collection to take from
         @param nftIds The specific NFT IDs to take
+        @param nftCounts The specific NFT counts to take
         @param isRouter True if calling from LSSVMRouter, false otherwise. Not used for
         ETH pairs.
         @param routerCaller If isRouter is true, ERC20 tokens will be transferred from this address. Not used for
@@ -597,23 +651,22 @@ abstract contract LSSVMPair1155 is
     function _takeNFTsFromSender(
         IERC1155 _nft,
         uint256[] calldata nftIds,
-        ILSSVMPairFactoryLike _factory,
+        uint256[] calldata nftCounts,
         bool isRouter,
         address routerCaller
     ) internal virtual {
         {
             address _assetRecipient = getAssetRecipient();
-            uint256 numNFTs = nftIds.length;
 
             if (isRouter) {
                 // Verify if router is allowed
                 LSSVMRouter router = LSSVMRouter(payable(msg.sender));
-                (bool routerAllowed, ) = _factory.routerStatus(router);
+                (bool routerAllowed, ) = factory().routerStatus(router);
                 require(routerAllowed, "Not router");
 
                 // Call router to pull NFTs
                 // If more than 1 NFT is being transfered, we can do a balance check instead of an ownership check, as pools are indifferent between NFTs from the same collection
-                for (uint i = 0; i < numNFTs; ) {
+                for (uint i = 0; i < nftIds.length; ) {
                     uint beforeBalance = _nft.balanceOf(
                         _assetRecipient,
                         nftIds[i]
@@ -624,12 +677,13 @@ abstract contract LSSVMPair1155 is
                         routerCaller,
                         _assetRecipient,
                         nftIds[i],
+                        nftCounts[i],
                         pairVariant()
                     );
 
                     require(
                         (_nft.balanceOf(_assetRecipient, nftIds[i]) -
-                            beforeBalance) == 1,
+                            beforeBalance) == nftCounts[i],
                         "NFT not transferred"
                     );
 
@@ -639,12 +693,12 @@ abstract contract LSSVMPair1155 is
                 }
             } else {
                 // Pull NFTs directly from sender
-                for (uint256 i; i < numNFTs; ) {
+                for (uint256 i; i < nftIds.length; ) {
                     _nft.safeTransferFrom(
                         msg.sender,
                         _assetRecipient,
                         nftIds[i],
-                        1,
+                        nftCounts[i],
                         ""
                     );
 

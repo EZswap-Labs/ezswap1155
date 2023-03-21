@@ -4,10 +4,10 @@ require("dotenv").config()
 
 
 const { setGlobalDispatcher, ProxyAgent } = require('undici')
-const proxyAgent = new ProxyAgent('http://127.0.0.1:7890')
+const proxyAgent = new ProxyAgent('http://127.0.0.1:1086')
 setGlobalDispatcher(proxyAgent)
 
-
+//0x151680418925b2316d1bd1420e0f0D778228593d
 const goerliAccount = process.env.goerliAccount
 const goerliUrl = process.env.goerliUrl
 
@@ -37,20 +37,26 @@ module.exports = {
   },
 
   networks: {
-    // goerli: {
-    //   url: goerliUrl,
-    //   accounts: [
-    //     goerliAccount
-    //   ],
-    // },
-    // mainnet: {
-    //   url: mainnetUrl,
-    //   accounts: [
-    //     mainnetAccount
-    //   ],
-    // }
+    hardhat: {
+      chainId: 1,
+      forking:{
+        url: "https://eth-mainnet.g.alchemy.com/v2/kNPJaYqMx7BA9TcDDJQ8pS5WcLqXGiG7",  // forkingUrl
+        blockNumber: 16582871,    // mainnet-- 16246090 buy  16232197 sell   //  goerli 8221940 sell   // 16341230 sell mulit  // sell jlx 16355510
+      },
+    },
+    goerli: {
+      url: goerliUrl,
+      accounts: [
+        goerliAccount
+      ],
+      chainId: 5,
+      allowUnlimitedContractSize: true,
+    },
   },
   etherscan: {
     apiKey: ethscanKey
+  },
+  mocha: {
+    timeout: 100000000
   },
 };

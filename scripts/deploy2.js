@@ -3,19 +3,19 @@ const hre = require("hardhat");
 async function main() {
   const [owner] = await ethers.getSigners();
 
-  // const LinearCurve = await hre.ethers.getContractFactory("LinearCurve");
-  // const linearcurve = await LinearCurve.deploy();
-  // await linearcurve.deployed();
+  const LinearCurve = await hre.ethers.getContractFactory("LinearCurve");
+  const linearcurve = await LinearCurve.deploy();
+  await linearcurve.deployed();
 
-  // const ExponentialCurve = await hre.ethers.getContractFactory(
-  //   "ExponentialCurve"
-  // );
-  // const exponentialcurve = await ExponentialCurve.deploy();
-  // await exponentialcurve.deployed();
+  const ExponentialCurve = await hre.ethers.getContractFactory(
+    "ExponentialCurve"
+  );
+  const exponentialcurve = await ExponentialCurve.deploy();
+  await exponentialcurve.deployed();
 
-  // console.log(
-  //   `linearcurve deployed to ${linearcurve.address} , exponentialcurve deployed to ${exponentialcurve.address}`
-  // );
+  console.log(
+    `linearcurve deployed to ${linearcurve.address} , exponentialcurve deployed to ${exponentialcurve.address}`
+  );
 
   // ======================================
 
@@ -94,11 +94,11 @@ async function main() {
 
   // ========================================== init
   const setcurve1 = await pairfactory.setBondingCurveAllowed(
-    '0xD1d21c45AfdcB81A4F703D06772496ae58Bd0A1E',
+    linearcurve.address,
     true
   );
   const setcurve2 = await pairfactory.setBondingCurveAllowed(
-    '0x50113a4e1590660464755fE19063CD6201F37cC4',
+    exponentialcurve.address,
     true
   );
   console.log(`set curve to factory whitelist `);

@@ -150,7 +150,9 @@ describe('sell nft eth', async () => {
 
         const pairfactoryContract1 = new ethers.Contract(pairfactory.address, pairFactoryAbi.abi).connect(alice)
         const myErc20TokenContract1 = new ethers.Contract(myErc20TokenContract.address, MyErc20TokenABI.abi).connect(alice)
-        await myErc20TokenContract1.approve(pairfactory.address, 60000000000)
+        await myErc20TokenContract1.approve(pairfactory.address, 100000000000)
+
+        await myNftTokenContract.connect(alice).setApprovalForAll(pairfactoryContract1.address, true);
 
         const createtradelpool = await pairfactoryContract1.createPair1155ERC20(
             [
@@ -162,25 +164,25 @@ describe('sell nft eth', async () => {
                 100000,  // delta
                 0,
                 50000000000,
-                [],
-                60000000000
+                1,
+                0,
+                100000000000
             ]
         )
         const txReceipt = await createtradelpool.wait();
         const poolAddress = (await txReceipt.events.filter(item => item.event == 'NewPair'))[0].args[0]
-
         await myNftTokenContract.setApprovalForAll(pairrouter.address, true);
         console.log("operator balance:",await myErc20TokenContract.balanceOf("0x7271b723F864d77Db16C20dDf0eC8b78Df05aeb2"));
 
         ////////////////// sell test robustSwapNFTsForToken
         const minOutput = hre.ethers.utils.parseEther("0")
-        const swapList = [[[poolAddress, [1,]], minOutput]]
+        const swapList = [[[poolAddress, [1], [2]], minOutput]]
         const ddl = (await ethers.provider.getBlock("latest")).timestamp * 2;
         const robustSell = await pairrouter.robustSwapNFTsForToken(swapList, owner.address, ddl)
         console.log("balance :", await myErc20TokenContract.balanceOf('0x7271b723F864d77Db16C20dDf0eC8b78Df05aeb2'))
         console.log("operator balance:",await myErc20TokenContract.balanceOf("0x7271b723F864d77Db16C20dDf0eC8b78Df05aeb2"));
 
-        expect(await myNftTokenContract.balanceOf(alice.address, 1)).to.equal(1);
+        expect(await myNftTokenContract.balanceOf(alice.address, 1)).to.equal(11);
 
     })
 })

@@ -149,22 +149,21 @@ describe('buy nft eth', async () => {
             ethers.utils.parseEther("0.001"),  // delta
             0,
             ethers.utils.parseEther("0.01"),
-            [1]
+            1,
+            99
         )
 
         const txReceipt = await createtradelpool.wait();
         const poolAddress = (await txReceipt.events.filter(item => item.event == 'NewPair'))[0].args[0]
+        console.log("token balance:",await myErc1155TokenContract.balanceOf(poolAddress,1));
 
         const pairrouterContract = new ethers.Contract(pairrouter.address, pairrouterAbi.abi).connect(alice);
 
-        console.log("operator balance:",await ethers.provider.getBalance("0x7271b723F864d77Db16C20dDf0eC8b78Df05aeb2"));
         ////////////////////// buy test robustswapethforspecificNFTs
-        const maxCost = hre.ethers.utils.parseEther("1")
-        const swapList = [[[poolAddress, [1]], maxCost]]
+        const maxCost = hre.ethers.utils.parseEther("1000")
+        const swapList = [[[poolAddress, [1], [80]], maxCost]]
         const ddl = (await ethers.provider.getBlock("latest")).timestamp * 2;
         const robustBuy = await pairrouterContract.robustSwapETHForSpecificNFTs(swapList, alice.address, alice.address, ddl, { value: maxCost })
-        console.log("operator balance:",await ethers.provider.getBalance("0x7271b723F864d77Db16C20dDf0eC8b78Df05aeb2"));
-
-        expect(await myErc1155TokenContract.balanceOf(alice.address,1)).to.equal(1);
+        expect(await myErc1155TokenContract.balanceOf(alice.address,1)).to.equal(80);
     })
 })

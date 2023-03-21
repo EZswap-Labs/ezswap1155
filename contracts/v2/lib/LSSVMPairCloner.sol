@@ -193,13 +193,21 @@ library LSSVMPairCloner {
         }
     }
 
-    /// TODO
+    /**
+     * @dev Deploys and returns the address of a clone that mimics the behaviour of `implementation`.
+     *
+     * This function uses the create opcode, which should never revert.
+     *
+     * During the delegate call, extra data is copied into the calldata which can then be
+     * accessed by the implementation contract.
+     */
     function cloneETHPair1155(
         address implementation,
         ILSSVMPairFactoryLike factory,
         ICurve bondingCurve,
         IERC1155 nft,
-        uint8 poolType
+        uint8 poolType,
+        uint256 tokenId
     ) internal returns (address instance) {
         assembly {
             let ptr := mload(0x40)
@@ -219,10 +227,10 @@ library LSSVMPairCloner {
             // f3          | RETURN                |                         | [0-runSize): runtime code
 
             // -------------------------------------------------------------------------------------------------------------
-            // RUNTIME (53 bytes of code + 61 bytes of extra data = 114 bytes)
+            // RUNTIME (53 bytes of code + 93 bytes of extra data = 146 bytes)
             // -------------------------------------------------------------------------------------------------------------
 
-            // extra data size = 3d
+            // extra data size = 5d
             // 3d          | RETURNDATASIZE        | 0                       | –
             // 3d          | RETURNDATASIZE        | 0 0                     | –
             // 3d          | RETURNDATASIZE        | 0 0 0                   | –
@@ -242,7 +250,7 @@ library LSSVMPairCloner {
             // 73 addr     | PUSH20 0x123…         | addr 0 cds 0 0 0 0      | [0, cds) = calldata, [cds, cds+0x35) = extraData
             mstore(
                 ptr,
-                hex"60_72_3d_81_60_09_3d_39_f3_3d_3d_3d_3d_36_3d_3d_37_60_3d_60_35_36_39_36_60_3d_01_3d_73_00_00_00"
+                hex"60_92_3d_81_60_09_3d_39_f3_3d_3d_3d_3d_36_3d_3d_37_60_5d_60_35_36_39_36_60_5d_01_3d_73_00_00_00"
             )
             mstore(add(ptr, 0x1d), shl(0x60, implementation))
 
@@ -264,25 +272,35 @@ library LSSVMPairCloner {
             )
 
             // -------------------------------------------------------------------------------------------------------------
-            // EXTRA DATA (61 bytes)
+            // EXTRA DATA (93 bytes)
             // -------------------------------------------------------------------------------------------------------------
 
             mstore(add(ptr, 0x3e), shl(0x60, factory))
             mstore(add(ptr, 0x52), shl(0x60, bondingCurve))
             mstore(add(ptr, 0x66), shl(0x60, nft))
             mstore8(add(ptr, 0x7a), poolType)
+            mstore(add(ptr, 0x7b), tokenId)
 
-            instance := create(0, ptr, 0x7b)
+            instance := create(0, ptr, 0x9b)
         }
     }
 
+    /**
+     * @dev Deploys and returns the address of a clone that mimics the behaviour of `implementation`.
+     *
+     * This function uses the create opcode, which should never revert.
+     *
+     * During the delegate call, extra data is copied into the calldata which can then be
+     * accessed by the implementation contract.
+     */
     function cloneERC20Pair1155(
         address implementation,
         ILSSVMPairFactoryLike factory,
         ICurve bondingCurve,
         IERC1155 nft,
         uint8 poolType,
-        ERC20 token
+        ERC20 token,
+        uint256 tokenId
     ) internal returns (address instance) {
         assembly {
             let ptr := mload(0x40)
@@ -292,7 +310,7 @@ library LSSVMPairCloner {
             // -------------------------------------------------------------------------------------------------------------
 
             // creation size = 09
-            // runtime size = 86
+            // runtime size = a6
             // 60 runtime  | PUSH1 runtime (r)     | r                       | –
             // 3d          | RETURNDATASIZE        | 0 r                     | –
             // 81          | DUP2                  | r 0 r                   | –
@@ -302,10 +320,10 @@ library LSSVMPairCloner {
             // f3          | RETURN                |                         | [0-runSize): runtime code
 
             // -------------------------------------------------------------------------------------------------------------
-            // RUNTIME (53 bytes of code + 81 bytes of extra data = 134 bytes)
+            // RUNTIME (53 bytes of code + 113 bytes of extra data = 166 bytes)
             // -------------------------------------------------------------------------------------------------------------
 
-            // extra data size = 51
+            // extra data size = 71
             // 3d          | RETURNDATASIZE        | 0                       | –
             // 3d          | RETURNDATASIZE        | 0 0                     | –
             // 3d          | RETURNDATASIZE        | 0 0 0                   | –
@@ -325,7 +343,7 @@ library LSSVMPairCloner {
             // 73 addr     | PUSH20 0x123…         | addr 0 cds 0 0 0 0      | [0, cds) = calldata, [cds, cds+0x35) = extraData
             mstore(
                 ptr,
-                hex"60_86_3d_81_60_09_3d_39_f3_3d_3d_3d_3d_36_3d_3d_37_60_51_60_35_36_39_36_60_51_01_3d_73_00_00_00"
+                hex"60_a6_3d_81_60_09_3d_39_f3_3d_3d_3d_3d_36_3d_3d_37_60_71_60_35_36_39_36_60_71_01_3d_73_00_00_00"
             )
             mstore(add(ptr, 0x1d), shl(0x60, implementation))
 
@@ -347,7 +365,7 @@ library LSSVMPairCloner {
             )
 
             // -------------------------------------------------------------------------------------------------------------
-            // EXTRA DATA (81 bytes)
+            // EXTRA DATA (113 bytes)
             // -------------------------------------------------------------------------------------------------------------
 
             mstore(add(ptr, 0x3e), shl(0x60, factory))
@@ -355,8 +373,9 @@ library LSSVMPairCloner {
             mstore(add(ptr, 0x66), shl(0x60, nft))
             mstore8(add(ptr, 0x7a), poolType)
             mstore(add(ptr, 0x7b), shl(0x60, token))
+            mstore(add(ptr, 0x8f), tokenId)
 
-            instance := create(0, ptr, 0x8f)
+            instance := create(0, ptr, 0xaf)
         }
     }
 
@@ -401,6 +420,46 @@ library LSSVMPairCloner {
     }
 
     /**
+     * @notice Checks if a contract is a clone of a LSSVMPair1155ETH.
+     * @dev Only checks the runtime bytecode, does not check the extra data.
+     * @param factory the factory that deployed the clone
+     * @param implementation the LSSVMPairETH implementation contract
+     * @param query the contract to check
+     * @return result True if the contract is a clone, false otherwise
+     */
+    function isETHPair1155Clone(
+        address factory,
+        address implementation,
+        address query
+    ) internal view returns (bool result) {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            let ptr := mload(0x40)
+            mstore(
+                ptr,
+                hex"3d_3d_3d_3d_36_3d_3d_37_60_5d_60_35_36_39_36_60_5d_01_3d_73_00_00_00_00_00_00_00_00_00_00_00_00"
+            )
+            mstore(add(ptr, 0x14), shl(0x60, implementation))
+            mstore(
+                add(ptr, 0x28),
+                hex"5a_f4_3d_3d_93_80_3e_60_33_57_fd_5b_f3_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00"
+            )
+            mstore(add(ptr, 0x35), shl(0x60, factory))
+
+            // compare expected bytecode with that of the queried contract
+            let other := add(ptr, 0x49)
+            extcodecopy(query, other, 0, 0x49)
+            result := and(
+                eq(mload(ptr), mload(other)),
+                and(
+                    eq(mload(add(ptr, 0x20)), mload(add(other, 0x20))),
+                    eq(mload(add(ptr, 0x29)), mload(add(other, 0x29)))
+                )
+            )
+        }
+    }
+
+    /**
      * @notice Checks if a contract is a clone of a LSSVMPairERC20.
      * @dev Only checks the runtime bytecode, does not check the extra data.
      * @param implementation the LSSVMPairERC20 implementation contract
@@ -418,6 +477,45 @@ library LSSVMPairCloner {
             mstore(
                 ptr,
                 hex"3d_3d_3d_3d_36_3d_3d_37_60_51_60_35_36_39_36_60_51_01_3d_73_00_00_00_00_00_00_00_00_00_00_00_00"
+            )
+            mstore(add(ptr, 0x14), shl(0x60, implementation))
+            mstore(
+                add(ptr, 0x28),
+                hex"5a_f4_3d_3d_93_80_3e_60_33_57_fd_5b_f3_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00"
+            )
+            mstore(add(ptr, 0x35), shl(0x60, factory))
+
+            // compare expected bytecode with that of the queried contract
+            let other := add(ptr, 0x49)
+            extcodecopy(query, other, 0, 0x49)
+            result := and(
+                eq(mload(ptr), mload(other)),
+                and(
+                    eq(mload(add(ptr, 0x20)), mload(add(other, 0x20))),
+                    eq(mload(add(ptr, 0x29)), mload(add(other, 0x29)))
+                )
+            )
+        }
+    }
+
+    /**
+     * @notice Checks if a contract is a clone of a LSSVMPair1155ERC20.
+     * @dev Only checks the runtime bytecode, does not check the extra data.
+     * @param implementation the LSSVMPairERC20 implementation contract
+     * @param query the contract to check
+     * @return result True if the contract is a clone, false otherwise
+     */
+    function isERC20Pair1155Clone(
+        address factory,
+        address implementation,
+        address query
+    ) internal view returns (bool result) {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            let ptr := mload(0x40)
+            mstore(
+                ptr,
+                hex"3d_3d_3d_3d_36_3d_3d_37_60_71_60_35_36_39_36_60_71_01_3d_73_00_00_00_00_00_00_00_00_00_00_00_00"
             )
             mstore(add(ptr, 0x14), shl(0x60, implementation))
             mstore(
