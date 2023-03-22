@@ -40,8 +40,8 @@ module.exports = {
     hardhat: {
       chainId: 1,
       forking:{
-        url: "https://eth-mainnet.g.alchemy.com/v2/kNPJaYqMx7BA9TcDDJQ8pS5WcLqXGiG7",  // forkingUrl
-        blockNumber: 16582871,    // mainnet-- 16246090 buy  16232197 sell   //  goerli 8221940 sell   // 16341230 sell mulit  // sell jlx 16355510
+        url: "https://eth-mainnet.g.alchemy.com/v2/kNPJaYqMx7BA9TcDDJQ8pS5WcLqXGiG7",
+        blockNumber: 16582871
       },
     },
     goerli: {
@@ -50,7 +50,7 @@ module.exports = {
         goerliAccount
       ],
       chainId: 5,
-      allowUnlimitedContractSize: true,
+      allowUnlimitedContractSize: true
     },
   },
   etherscan: {

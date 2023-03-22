@@ -5,6 +5,7 @@ const { ethers } = hre
 const { BigNumber, Signer } = require('ethers')
 const pairrouterAbi = require('../../artifacts/contracts/v2/LSSVMRouter.sol/LSSVMRouter.json')
 const pairFactoryAbi = require('../../artifacts/contracts/v2/LSSVMPairFactory.sol/LSSVMPairFactory.json')
+const pair1155Abi = require('../../artifacts/contracts/v2/LSSVMPair1155.sol/LSSVMPair1155.json')
 
 describe('buy nft eth', async () => {
 
@@ -152,9 +153,13 @@ describe('buy nft eth', async () => {
             1,
             99
         )
-
+        
         const txReceipt = await createtradelpool.wait();
         const poolAddress = (await txReceipt.events.filter(item => item.event == 'NewPair'))[0].args[0]
+        console.log("token balance:",await myErc1155TokenContract.balanceOf(poolAddress,1));
+
+        const pair1155Contract = new ethers.Contract(poolAddress, pair1155Abi.abi).connect(owner);
+        await pair1155Contract.withdrawERC1155(myErc1155TokenContract.address, 1, 1);
         console.log("token balance:",await myErc1155TokenContract.balanceOf(poolAddress,1));
 
         const pairrouterContract = new ethers.Contract(pairrouter.address, pairrouterAbi.abi).connect(alice);
