@@ -17,6 +17,7 @@
     "@openzeppelin/contracts": "^4.7.3",
     "@rari-capital/solmate": "github:transmissions11/solmate#1116070fe7dc2200e6696d0047cdf7b22acff137",
     "dotenv": "^16.0.3",
+    "solidity-docgen": "^0.6.0-beta.35",
     "undici": "^5.11.0"
   }
 }

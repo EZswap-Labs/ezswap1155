@@ -152,7 +152,7 @@ describe('sell nft eth', async () => {
             ethers.utils.parseEther("0.001"),
             1,
             0,
-            { value: ethers.utils.parseEther("0.001")}
+            { value: ethers.utils.parseEther("0.002")}
         )
 
         const txReceipt = await createtradelpool.wait();

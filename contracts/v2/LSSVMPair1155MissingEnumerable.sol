@@ -19,35 +19,17 @@ abstract contract LSSVMPair1155MissingEnumerable is LSSVMPair1155 {
     function _sendSpecificNFTsToRecipient(
         IERC1155 _nft,
         address nftRecipient,
-        uint256[] calldata nftIds,
-        uint256[] calldata nftCounts
+        uint256 nftId,
+        uint256 nftCount
     ) internal override {
         // Send NFTs to caller
-        // If missing enumerable, update pool's own ID set
-        uint256 numNFTs = nftIds.length;
-        for (uint256 i; i < numNFTs; ) {
-            _nft.safeTransferFrom(
-                address(this),
-                nftRecipient,
-                nftIds[i],
-                nftCounts[i],
-                ""
-            );
-            // Remove from id set
-            uint256 toDeleteIndex = idSet.findUpperBound(nftIds[i]);
-            require(idSet[toDeleteIndex] == nftIds[i], "Invalid Id");
-            uint256 lastIndex = idSet.length - 1;
-            if (lastIndex != toDeleteIndex) {
-                uint256 lastValue = idSet[lastIndex];
-                // Move the last value to the index where the value to delete is
-                idSet[toDeleteIndex] = lastValue;
-            }
-            idSet.pop();
-
-            unchecked {
-                ++i;
-            }
-        }
+        _nft.safeTransferFrom(
+            address(this),
+            nftRecipient,
+            nftId,
+            nftCount,
+            ""
+        );
     }
 
     /// @inheritdoc LSSVMPair1155
@@ -66,11 +48,6 @@ abstract contract LSSVMPair1155MissingEnumerable is LSSVMPair1155 {
         uint256,
         bytes memory
     ) public virtual returns (bytes4) {
-        IERC1155 _nft = nft();
-        // If it's from the pair's NFT, add the ID to ID set
-        if (msg.sender == address(_nft)) {
-            idSet.push(id);
-        }
         return this.onERC1155Received.selector;
     }
 
@@ -81,16 +58,6 @@ abstract contract LSSVMPair1155MissingEnumerable is LSSVMPair1155 {
         uint256[] memory,
         bytes memory
     ) public virtual returns (bytes4) {
-        IERC1155 _nft = nft();
-        if (msg.sender == address(_nft)) {
-            for (uint i; i < nftIds.length; ) {
-                idSet.push(nftIds[i]);
-
-                unchecked {
-                    ++i;
-                }
-            }
-        }
         return this.onERC1155BatchReceived.selector;
     }
 
@@ -100,39 +67,15 @@ abstract contract LSSVMPair1155MissingEnumerable is LSSVMPair1155 {
         uint256[] calldata ids,
         uint256[] calldata amounts
     ) external override onlyOwner {
-        IERC1155 _nft = nft();
+        
+        for (uint256 i; i < ids.length; ) {
+            a.safeTransferFrom(address(this), msg.sender, ids[i], amounts[i], "");
 
-        if (a != _nft) {
-            for (uint i; i < ids.length; ) {
-                a.safeTransferFrom(address(this), msg.sender, ids[i], 1, "");
-                unchecked {
-                    ++i;
-                }
+            unchecked {
+                ++i;
             }
-        } else {
-            for (uint i; i < ids.length; ) {
-                a.safeTransferFrom(address(this), msg.sender, ids[i], amounts[i], "");
-
-                // Remove from id set
-                uint256 toDeleteIndex = idSet.findUpperBound(ids[i]);
-                require(idSet[toDeleteIndex] == ids[i], "Invalid Id");
-
-                uint256 lastIndex = idSet.length - 1;
-                if (lastIndex != toDeleteIndex) {
-                    uint256 lastValue = idSet[lastIndex];
-                    // Move the last value to the index where the value to delete is
-                    idSet[toDeleteIndex] = lastValue;
-                }
-
-                idSet.pop();
-
-
-                unchecked {
-                    ++i;
-                }
-            }
-
-            emit NFTWithdrawal();
         }
+        
+        emit NFTWithdrawal();
     }
 }
