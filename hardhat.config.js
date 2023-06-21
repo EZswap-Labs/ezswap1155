@@ -4,15 +4,18 @@ require("dotenv").config()
 
 
 const { setGlobalDispatcher, ProxyAgent } = require('undici')
-const proxyAgent = new ProxyAgent('http://127.0.0.1:1086')
-setGlobalDispatcher(proxyAgent)
+// const proxyAgent = new ProxyAgent('http://127.0.0.1:1086')
+// setGlobalDispatcher(proxyAgent)
 
 //0x151680418925b2316d1bd1420e0f0D778228593d
 const goerliAccount = process.env.goerliAccount
 const goerliUrl = process.env.goerliUrl
 
-const mainnetAccount = process.env.mainnetAccount
-const mainnetUrl = process.env.mainnetUrl
+const maticAccount = process.env.maticAccount
+const maticUrl = process.env.maticUrl
+
+const scrollAccount = process.env.scrollAccount
+const scrollUrl = process.env.scrollUrl
 
 const ethscanKey = process.env.ethscanKey
 
@@ -38,11 +41,9 @@ module.exports = {
 
   networks: {
     hardhat: {
-      chainId: 1,
-      forking:{
-        url: "https://eth-mainnet.g.alchemy.com/v2/kNPJaYqMx7BA9TcDDJQ8pS5WcLqXGiG7",
-        blockNumber: 16582871
-      },
+      blockGasLimit: 30_000_000,
+      throwOnCallFailures: false,
+      allowUnlimitedContractSize: true,
     },
     goerli: {
       url: goerliUrl,
@@ -52,6 +53,18 @@ module.exports = {
       chainId: 5,
       allowUnlimitedContractSize: true
     },
+    matic: {
+      url: maticUrl,
+      accounts: [maticAccount],
+      allowUnlimitedContractSize: true,
+      chainId: 137
+    },
+    scroll: {
+      url: scrollUrl,
+      accounts: [scrollAccount],
+      allowUnlimitedContractSize: true,
+      chainId: 534353
+    }
   },
   etherscan: {
     apiKey: ethscanKey

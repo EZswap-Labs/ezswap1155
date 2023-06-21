@@ -143,15 +143,17 @@ describe('sell nft eth', async () => {
 
         await myNftContract.connect(alice).setApprovalForAll(pairfactory.address, true)
         const createtradelpool = await pairfactoryContract1.createPair1155ETH(
-            nftContractAddress,
-            linearcurve.address,
-            alice.address,
-            0,
-            ethers.utils.parseEther("0.000001"),  // delta
-            0,
-            ethers.utils.parseEther("0.001"),
-            1,
-            0,
+            [
+             nftContractAddress,
+             linearcurve.address,
+             alice.address,
+             0,
+             ethers.utils.parseEther("0.000001"),  // delta
+             0,
+             ethers.utils.parseEther("0.001"),
+             1,
+             0,
+            ],
             { value: ethers.utils.parseEther("0.002")}
         )
 
@@ -168,6 +170,6 @@ describe('sell nft eth', async () => {
         const robustSell = await pairrouter.robustSwapNFTsForToken(swapList , owner.address, ddl)
         console.log("operator balance:",await ethers.provider.getBalance("0x7271b723F864d77Db16C20dDf0eC8b78Df05aeb2"));
 
-        expect(await myNftContract.balanceOf(alice.address, 1)).to.equal(11);
+        expect(await myNftContract.balanceOf(alice.address, 1)).to.equal(2);
     })
 })

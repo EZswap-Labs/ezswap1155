@@ -15,6 +15,7 @@ import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 import {LSSVMPair} from "./LSSVMPair.sol";
+import {LSSVMPair1155} from "./LSSVMPair1155.sol";
 import {LSSVMRouter} from "./LSSVMRouter.sol";
 import {LSSVMPairETH} from "./LSSVMPairETH.sol";
 import {LSSVMPair1155ETH} from "./LSSVMPair1155ETH.sol";
@@ -188,38 +189,42 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
 
     /**
         @notice Creates a pair contract using EIP-1167.
-        @param _nft The NFT contract of the collection the pair trades
-        @param _bondingCurve The bonding curve for the pair to price NFTs, must be whitelisted
-        @param _assetRecipient The address that will receive the assets traders give during trades.
+        @param nft The NFT contract of the collection the pair trades
+        @param bondingCurve The bonding curve for the pair to price NFTs, must be whitelisted
+        @param assetRecipient The address that will receive the assets traders give during trades.
                               If set to address(0), assets will be sent to the pool address.
                               Not available to TRADE pools. 
-        @param _poolType TOKEN, NFT, or TRADE
-        @param _delta The delta value used by the bonding curve. The meaning of delta depends
+        @param poolType TOKEN, NFT, or TRADE
+        @param delta The delta value used by the bonding curve. The meaning of delta depends
         on the specific curve.
-        @param _fee The fee taken by the LP in each trade. Can only be non-zero if _poolType is Trade.
-        @param _spotPrice The initial selling spot price
-        @param _initialNFTIDs The list of IDs of NFTs to transfer from the sender to the pair
+        @param fee The fee taken by the LP in each trade. Can only be non-zero if _poolType is Trade.
+        @param spotPrice The initial selling spot price
+        @param initialNFTIDs The list of IDs of NFTs to transfer from the sender to the pair
         @return pair The new pair
      */
+    struct CreatePairETHParams {
+        IERC721 nft;
+        ICurve bondingCurve;
+        address payable assetRecipient;
+        LSSVMPair.PoolType poolType;
+        uint128 delta;
+        uint96 fee;
+        uint128 spotPrice;
+        uint256[] initialNFTIDs;
+    }
+
     function createPairETH(
-        IERC721 _nft,
-        ICurve _bondingCurve,
-        address payable _assetRecipient,
-        LSSVMPair.PoolType _poolType,
-        uint128 _delta,
-        uint96 _fee,
-        uint128 _spotPrice,
-        uint256[] calldata _initialNFTIDs
+        CreatePairETHParams calldata params
     ) external payable returns (LSSVMPairETH pair) {
         require(
-            bondingCurveAllowed[_bondingCurve],
+            bondingCurveAllowed[params.bondingCurve],
             "Bonding curve not whitelisted"
         );
 
         // Check to see if the NFT supports Enumerable to determine which template to use
         address template;
         try
-            IERC165(address(_nft)).supportsInterface(
+            IERC165(address(params.nft)).supportsInterface(
                 INTERFACE_ID_ERC721_ENUMERABLE
             )
         returns (bool isEnumerable) {
@@ -234,38 +239,42 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
             payable(
                 template.cloneETHPair(
                     this,
-                    _bondingCurve,
-                    _nft,
-                    uint8(_poolType)
+                    params.bondingCurve,
+                    params.nft,
+                    uint8(params.poolType)
                 )
             )
         );
 
         _initializePairETH(
             pair,
-            _nft,
-            _assetRecipient,
-            _delta,
-            _fee,
-            _spotPrice,
-            _initialNFTIDs
+            params.nft,
+            params.assetRecipient,
+            params.delta,
+            params.fee,
+            params.spotPrice,
+            params.initialNFTIDs
         );
         emit NewPair(address(pair));
     }
 
+    struct CreatePair1155ETHParams {
+        IERC1155 nft;
+        ICurve bondingCurve;
+        address payable assetRecipient;
+        LSSVMPair1155.PoolType poolType;
+        uint128 delta;
+        uint96 fee;
+        uint128 spotPrice;
+        uint256 nftId;
+        uint256 initialNFTCount;
+    }
+
     function createPair1155ETH(
-        IERC1155 _nft,
-        ICurve _bondingCurve,
-        address payable _assetRecipient,
-        LSSVMPair.PoolType _poolType,
-        uint128 _delta,
-        uint96 _fee,
-        uint128 _spotPrice,
-        uint256 _nftId,
-        uint256 _initialNFTCount
+        CreatePair1155ETHParams calldata params
     ) external payable returns (LSSVMPair1155ETH pair) {
         require(
-            bondingCurveAllowed[_bondingCurve],
+            bondingCurveAllowed[params.bondingCurve],
             "Bonding curve not whitelisted"
         );
 
@@ -276,23 +285,23 @@ contract LSSVMPairFactory is Ownable, ILSSVMPairFactoryLike {
             payable(
                 template.cloneETHPair1155(
                     this,
-                    _bondingCurve,
-                    _nft,
-                    uint8(_poolType),
-                    _nftId
+                    params.bondingCurve,
+                    params.nft,
+                    uint8(params.poolType),
+                    params.nftId
                 )
             )
         );
 
         _initializePair1155ETH(
             pair,
-            _nft,
-            _assetRecipient,
-            _delta,
-            _fee,
-            _spotPrice,
-            _nftId,
-            _initialNFTCount
+            params.nft,
+            params.assetRecipient,
+            params.delta,
+            params.fee,
+            params.spotPrice,
+            params.nftId,
+            params.initialNFTCount
         );
         emit NewPair(address(pair));
     }

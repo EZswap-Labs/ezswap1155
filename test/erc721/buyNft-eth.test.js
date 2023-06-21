@@ -144,15 +144,31 @@ describe('buy nft eth', async () => {
 
         await myErc721TokenContract.setApprovalForAll(pairfactory.address, true)
 
+        // const createtradelpool = await pairfactory.createPairETH(
+        //     [
+        //     nftContractAddress,
+        //     linearcurve.address,
+        //     owner.address,
+        //     1,
+        //     ethers.utils.parseEther("0.001"),  // delta
+        //     0,
+        //     ethers.utils.parseEther("0.01"),
+        //     [0]
+        //     ]
+        // )
+
         const createtradelpool = await pairfactory.createPairETH(
+            [
             nftContractAddress,
             linearcurve.address,
-            owner.address,
-            1,
+            ethers.constants.AddressZero,
+            2,
             ethers.utils.parseEther("0.001"),  // delta
             0,
-            ethers.utils.parseEther("0.01"),
-            [0]
+            ethers.utils.parseEther("0.001"),
+            [0],
+            ],
+            {value: ethers.utils.parseEther("0.027")}
         )
 
         const txReceipt = await createtradelpool.wait();
@@ -162,9 +178,16 @@ describe('buy nft eth', async () => {
         console.log("operator balance:",await ethers.provider.getBalance("0x7271b723F864d77Db16C20dDf0eC8b78Df05aeb2"));
         ////////////////////// buy test robustswapethforspecificNFTs
         const maxCost = hre.ethers.utils.parseEther("1")
-        const swapList = [[[poolAddress, [0], [1]], maxCost]]
+        const swapList = [[[poolAddress, [0],[1]], maxCost]]
         const ddl = (await ethers.provider.getBlock("latest")).timestamp * 2;
         const robustBuy = await pairrouterContract.robustSwapETHForSpecificNFTs(swapList, alice.address, alice.address, ddl, { value: maxCost })
+        console.log("operator balance:",await ethers.provider.getBalance("0x7271b723F864d77Db16C20dDf0eC8b78Df05aeb2"));
+
+        myErc721TokenContract.connect(owner).mintToken(2);
+        await myErc721TokenContract.connect(owner).setApprovalForAll(pairrouter.address, true)
+        const minOutput = hre.ethers.utils.parseEther("0")
+        const swapList1 = [[[ poolAddress, [1],[1]], minOutput]]
+        const robustSell = await pairrouterContract.connect(owner).robustSwapNFTsForToken(swapList1 , owner.address, ddl, {gasPrice: ethers.BigNumber.from(80215311211)})
         console.log("operator balance:",await ethers.provider.getBalance("0x7271b723F864d77Db16C20dDf0eC8b78Df05aeb2"));
         expect(await myErc721TokenContract.ownerOf(0)).to.equal(alice.address);
     })

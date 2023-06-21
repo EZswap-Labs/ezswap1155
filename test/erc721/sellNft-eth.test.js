@@ -142,20 +142,37 @@ describe('sell nft eth', async () => {
 
         const pairfactoryContract1 = new ethers.Contract(pairfactory.address, pairFactoryAbi.abi).connect(alice)
 
+        // const createtradelpool = await pairfactoryContract1.createPairETH(
+        //     [
+        //     nftContractAddress,
+        //     linearcurve.address,
+        //     alice.address,
+        //     0,
+        //     ethers.utils.parseEther("0.001"),  // delta
+        //     0,
+        //     ethers.utils.parseEther("0.001"),
+        //     [],
+        //     ],
+        //     { value: ethers.utils.parseEther("0.027")}
+        // )
+
         const createtradelpool = await pairfactoryContract1.createPairETH(
+            [
             nftContractAddress,
             linearcurve.address,
-            alice.address,
-            0,
+            ethers.constants.AddressZero,
+            2,
             ethers.utils.parseEther("0.001"),  // delta
             0,
             ethers.utils.parseEther("0.001"),
             [],
+            ],
             { value: ethers.utils.parseEther("0.027")}
         )
 
         const txReceipt = await createtradelpool.wait();
         const poolAddress = (await txReceipt.events.filter(item => item.event == 'NewPair'))[0].args[0]
+        console.log("poolAddress:", poolAddress)
         const pairrouterContract = new ethers.Contract(pairrouter.address, pairrouterAbi.abi).connect(owner);
         await myNftContract.setApprovalForAll(pairrouterContract.address, true)
         console.log("operator balance:",await ethers.provider.getBalance("0x7271b723F864d77Db16C20dDf0eC8b78Df05aeb2"));

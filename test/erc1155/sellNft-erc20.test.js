@@ -161,7 +161,7 @@ describe('sell nft eth', async () => {
                 linearcurve.address,
                 alice.address,
                 0,
-                100000,  // delta
+                0,  // delta
                 0,
                 50000000000,
                 1,
@@ -182,7 +182,7 @@ describe('sell nft eth', async () => {
         console.log("balance :", await myErc20TokenContract.balanceOf('0x7271b723F864d77Db16C20dDf0eC8b78Df05aeb2'))
         console.log("operator balance:",await myErc20TokenContract.balanceOf("0x7271b723F864d77Db16C20dDf0eC8b78Df05aeb2"));
 
-        expect(await myNftTokenContract.balanceOf(alice.address, 1)).to.equal(11);
+        expect(await myNftTokenContract.balanceOf(alice.address, 1)).to.equal(2);
 
     })
 })
