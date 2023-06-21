@@ -13,8 +13,6 @@ import {ILSSVMPairFactoryLike} from "./ILSSVMPairFactoryLike.sol";
 abstract contract LSSVMPair1155MissingEnumerable is LSSVMPair1155 { 
     using Arrays for uint256[];
 
-    uint256[] private idSet;
-
     /// @inheritdoc LSSVMPair1155
     function _sendSpecificNFTsToRecipient(
         IERC1155 _nft,
@@ -34,7 +32,9 @@ abstract contract LSSVMPair1155MissingEnumerable is LSSVMPair1155 {
 
     /// @inheritdoc LSSVMPair1155
     function getAllHeldIds() external view override returns (uint256[] memory) {
-        return idSet;
+        uint256[] memory Ids = new uint256[](1);
+        Ids[0] = nftId;
+        return Ids;
     }
 
     /**
@@ -67,7 +67,6 @@ abstract contract LSSVMPair1155MissingEnumerable is LSSVMPair1155 {
         uint256[] calldata ids,
         uint256[] calldata amounts
     ) external override onlyOwner {
-        
         for (uint256 i; i < ids.length; ) {
             a.safeTransferFrom(address(this), msg.sender, ids[i], amounts[i], "");
 

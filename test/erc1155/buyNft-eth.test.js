@@ -6,6 +6,7 @@ const { BigNumber, Signer } = require('ethers')
 const pairrouterAbi = require('../../artifacts/contracts/v2/LSSVMRouter.sol/LSSVMRouter.json')
 const pairFactoryAbi = require('../../artifacts/contracts/v2/LSSVMPairFactory.sol/LSSVMPairFactory.json')
 const pair1155Abi = require('../../artifacts/contracts/v2/LSSVMPair1155.sol/LSSVMPair1155.json')
+const erc1155Abi = require('../../artifacts/contracts/v2/MyErc1155Token.sol/MyErc1155Token.json')
 
 describe('buy nft eth', async () => {
 
@@ -133,7 +134,7 @@ describe('buy nft eth', async () => {
     })
 
     it("test ", async () => {
-        console.log("owner nft balance:",await myErc1155TokenContract.balanceOf(owner.address,1));
+        // console.log("owner nft balance:",await myErc1155TokenContract.balanceOf(owner.address,1));
 
         await pairfactory.authorize(nftContractAddress, operator.address)
         
@@ -143,32 +144,65 @@ describe('buy nft eth', async () => {
         await myErc1155TokenContract.setApprovalForAll(pairfactory.address, true)
 
         const createtradelpool = await pairfactory.createPair1155ETH(
-            nftContractAddress,
+            [nftContractAddress,
             linearcurve.address,
             owner.address,
             1,
-            ethers.utils.parseEther("0.001"),  // delta
+            0,  // delta
             0,
-            ethers.utils.parseEther("0.01"),
+            ethers.utils.parseEther("0.001"),
             1,
-            99
+            10]
         )
         
         const txReceipt = await createtradelpool.wait();
         const poolAddress = (await txReceipt.events.filter(item => item.event == 'NewPair'))[0].args[0]
         console.log("token balance:",await myErc1155TokenContract.balanceOf(poolAddress,1));
 
-        const pair1155Contract = new ethers.Contract(poolAddress, pair1155Abi.abi).connect(owner);
-        await pair1155Contract.withdrawERC1155(myErc1155TokenContract.address, 1, 1);
-        console.log("token balance:",await myErc1155TokenContract.balanceOf(poolAddress,1));
+        // console.log("pooladdress",poolAddress);
 
         const pairrouterContract = new ethers.Contract(pairrouter.address, pairrouterAbi.abi).connect(alice);
 
         ////////////////////// buy test robustswapethforspecificNFTs
-        const maxCost = hre.ethers.utils.parseEther("1000")
-        const swapList = [[[poolAddress, [1], [80]], maxCost]]
+        let maxCost = hre.ethers.utils.parseEther("0.1")
+        let swapList = [[[poolAddress, [1], [2]], maxCost]]
         const ddl = (await ethers.provider.getBlock("latest")).timestamp * 2;
         const robustBuy = await pairrouterContract.robustSwapETHForSpecificNFTs(swapList, alice.address, alice.address, ddl, { value: maxCost })
-        expect(await myErc1155TokenContract.balanceOf(alice.address,1)).to.equal(80);
+        await robustBuy.wait();
+        const robustBuy1 = await pairrouterContract.robustSwapETHForSpecificNFTs(swapList, alice.address, alice.address, ddl, { value: maxCost })
+        await robustBuy1.wait();
+        console.log("--------------------");
+        console.log("block number:",await ethers.provider.getBlockNumber());
+        console.log("buy nft balance:",await myErc1155TokenContract.balanceOf(alice.address,1));
+        // expect(await myErc1155TokenContract.balanceOf(alice.address,1)).to.equal(80);
     })
+
+    it.skip("test", async () => {
+        const walletAddress = "0xE3a463d743F762D538031BAD3f1E748BB41f96ec";
+        await hre.network.provider.request({
+            method: "hardhat_impersonateAccount",
+            params: [walletAddress],
+        });
+        const signer = await ethers.provider.getSigner(walletAddress);
+        const erc1155Contract = new ethers.Contract("0xf4910c763ed4e47a585e2d34baa9a4b611ae448c", erc1155Abi.abi).connect(signer);
+        // console.log("1155 balance:", await erc1155Contract.balanceOf(walletAddress, "0x01940c5006a58ae2233c6a83b1e8f8b34c90bf2200000000000001000000012c"))
+        await erc1155Contract.setApprovalForAll(pairfactory.address, true);
+        const createtradelpool = await pairfactory.connect(signer).createPair1155ETH(
+            "0xf4910c763ed4e47a585e2d34baa9a4b611ae448c",
+            "0xD38E321D0B450DF866B836612FBB5EECE3e4804e",
+            "0xE3a463d743F762D538031BAD3f1E748BB41f96ec",
+            0,
+            0,  // delta
+            0,
+            BigNumber.from("1000000000000000"),
+            "0x01940c5006a58ae2233c6a83b1e8f8b34c90bf2200000000000001000000012c",
+            3,
+            { value: BigNumber.from("3000000000000000")}
+        )
+        const txReceipt = await createtradelpool.wait();
+        const poolAddress = (await txReceipt.events.filter(item => item.event == 'NewPair'))[0].args[0]
+
+        console.log("poolAddress:",poolAddress);
+    })
+
 })

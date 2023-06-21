@@ -65,6 +65,11 @@ async function main() {
   const missEnum1155ERC20Tem = await MissEnum1155ERC20Tem.deploy();
   await missEnum1155ERC20Tem.deployed();
 
+  console.log(
+    `missEnum1155ETHTem is ${missEnum1155ETHTem.address} /// missEnum1155ERC20Tem is ${missEnum1155ERC20Tem.address}  `
+  );
+
+
   // =======================================================
   const _protocolFeeRecipient = owner.address;
   const _protocolFeeMultiplier = hre.ethers.utils.parseEther("0.01");
